@@ -1,0 +1,51 @@
+default_stages: [commit]
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    # -   id: check-added-large-files
+    -   id: mixed-line-ending
+    # -   id: check-executables-have-shebangs
+# -   repo: https://github.com/twu/skjold
+#     rev: v0.6.1
+#     hooks:
+#     - id: skjold
+#       verbose: true  # Important if used with `report_only`, see below.
+#       args: ["backend/poetry.lock", "backend/pyproject.toml"]
+-   repo: https://github.com/jorisroovers/gitlint  # git commit linter
+    rev:  v0.18.0 # Fill in a tag / sha here
+    hooks:
+    -   id: gitlint
+-   repo: https://github.com/zricethezav/gitleaks
+    rev: v8.15.3
+    hooks:
+      - id: gitleaks
+-   repo: https://github.com/crate-ci/typos
+    rev: v1.13.10
+    hooks:
+    -   id: typos
+        args: []
+# -   repo: local
+#     hooks:
+#       - id: ruff
+#         name: ruff
+#         # Workaround for VSCode (it does not support venv inside hooks)
+#         entry: bash -c 'source /home/neaph/Code/br-backend/env/bin/activate && ruff --config /home/neaph/Documents/ruff.toml --fix "$@"' --
+#         language: system
+#         types: [python]
+      # - id: black
+      #   name: black
+      #   entry: bash -c 'source /home/neaph/Code/br-backend/env/bin/activate && black "$@"' --
+      #   types: [python]
+      #   language: system
+      # - id: tests
+      #   name: Run tests
+      #   stages: [push]
+      #   always_run: true
+      #   entry: bash -c 'source /home/neaph/Code/configs-and-scripts/scripts/bash/common.sh && run_tests_docker pre_commit "$@"' --
+      #   pass_filenames: false
+      #   language: system
+      #   types: [python]
+      #   verbose: true
