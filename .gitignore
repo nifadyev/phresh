@@ -1,3 +1,8 @@
+# IDE related files
 .vscode
+
+# Environment files
 .env
+
+# Byte-compiled files
 __pycache__
