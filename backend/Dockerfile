@@ -20,6 +20,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # install python dependencies
 RUN --mount=type=cache,target=/root/.cache pip install poetry
 COPY poetry.lock pyproject.toml /backend/
-RUN --mount=type=cache,target=/root/.cache poetry export --no-interaction | pip install -r /dev/stdin
+# TODO: Check TESTING or LOCAL env variable to add `--with=dev` flag
+RUN --mount=type=cache,target=/root/.cache poetry export --no-interaction --with=dev | pip install -r /dev/stdin
 
 COPY . /backend
