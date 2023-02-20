@@ -7,6 +7,7 @@ from starlette.status import (
     HTTP_201_CREATED,
     HTTP_404_NOT_FOUND,
     HTTP_422_UNPROCESSABLE_ENTITY,
+    HTTP_400_BAD_REQUEST,
 )
 
 # decorate all tests with @pytest.mark.asyncio
@@ -103,11 +104,11 @@ class TestGetCleaning:
 
     @pytest.mark.parametrize(
         ("id", "status_code"),
-        (
+        [
             (500, 404),
             (-1, 404),
             (None, 422),
-        ),
+        ],
     )
     async def test_wrong_id_returns_error(
         self,
@@ -119,3 +120,148 @@ class TestGetCleaning:
         res = await client.get(app.url_path_for("cleanings:get-cleaning-by-id", id=id))
 
         assert res.status_code == status_code
+
+    async def test_get_all_cleanings_returns_valid_response(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        test_cleaning: CleaningInDB,
+    ) -> None:
+        response = await client.get(app.url_path_for("cleanings:get-all-cleanings"))
+
+        cleanings = [CleaningInDB(**cleaning_data) for cleaning_data in response.json()]
+        assert response.status_code == HTTP_200_OK
+        assert isinstance(response.json(), list)
+        assert len(response.json()) > 0
+        assert test_cleaning in cleanings
+
+
+class TestUpdateCleaning:
+    @pytest.mark.parametrize(
+        ("attrs_to_change", "values"),
+        [
+            (["name"], ["new fake cleaning name"]),
+            (["description"], ["new fake cleaning description"]),
+            (["price"], [3.14]),
+            (["cleaning_type"], ["full_clean"]),
+            (
+                ["name", "description"],
+                [
+                    "extra new fake cleaning name",
+                    "extra new fake cleaning description",
+                ],
+            ),
+            (["price", "cleaning_type"], [42.00, "dust_up"]),
+        ],
+    )
+    async def test_update_cleaning_with_valid_input(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        test_cleaning: CleaningInDB,
+        attrs_to_change: list[str],
+        values: list[str],
+    ) -> None:
+        cleaning_update = {
+            "cleaning_update": {
+                attrs_to_change[i]: values[i] for i in range(len(attrs_to_change))
+            },
+        }
+
+        response = await client.put(
+            app.url_path_for(
+                "cleanings:update-cleaning-by-id",
+                id=test_cleaning.id,
+            ),
+            json=cleaning_update,
+        )
+        updated_cleaning = CleaningInDB(**response.json())
+
+        assert response.status_code == HTTP_200_OK
+        assert (
+            updated_cleaning.id == test_cleaning.id
+        )  # make sure it's the same cleaning
+        # make sure that any attribute we updated has changed to the correct value
+        for i in range(len(attrs_to_change)):
+            attr_to_change = getattr(updated_cleaning, attrs_to_change[i])
+            assert attr_to_change != getattr(test_cleaning, attrs_to_change[i])
+            assert attr_to_change == values[i]
+        # make sure that no other attributes' values have changed
+        for attr, value in updated_cleaning.dict().items():
+            if attr not in attrs_to_change:
+                assert getattr(test_cleaning, attr) == value
+
+    @pytest.mark.parametrize(
+        ("id", "payload", "status_code"),
+        [
+            (-1, {"name": "test"}, HTTP_422_UNPROCESSABLE_ENTITY),
+            (0, {"name": "test2"}, HTTP_422_UNPROCESSABLE_ENTITY),
+            (500, {"name": "test3"}, HTTP_404_NOT_FOUND),
+            (1, None, 422),
+            (
+                1,
+                {"cleaning_type": "invalid cleaning type"},
+                HTTP_422_UNPROCESSABLE_ENTITY,
+            ),
+            (1, {"cleaning_type": None}, HTTP_400_BAD_REQUEST),
+        ],
+    )
+    async def test_update_cleaning_with_invalid_input_throws_error(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        id: int,
+        payload: dict,
+        status_code: int,
+    ) -> None:
+        cleaning_update = {"cleaning_update": payload}
+
+        response = await client.put(
+            app.url_path_for("cleanings:update-cleaning-by-id", id=id),
+            json=cleaning_update,
+        )
+
+        assert response.status_code == status_code
+
+
+class TestDeleteCleaning:
+    async def test_can_delete_cleaning_successfully(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        test_cleaning: CleaningInDB,
+    ) -> None:
+        # delete the cleaning
+        response = await client.delete(
+            app.url_path_for("cleanings:delete-cleaning-by-id", id=test_cleaning.id),
+        )
+        assert response.status_code == HTTP_200_OK
+
+        # ensure that the cleaning no longer exists
+        response = await client.get(
+            app.url_path_for("cleanings:get-cleaning-by-id", id=test_cleaning.id)
+        )
+        assert response.status_code == HTTP_404_NOT_FOUND
+
+    @pytest.mark.parametrize(
+        "id, status_code",
+        [
+            (500, HTTP_404_NOT_FOUND),
+            (0, HTTP_422_UNPROCESSABLE_ENTITY),
+            (-1, HTTP_422_UNPROCESSABLE_ENTITY),
+            (None, HTTP_422_UNPROCESSABLE_ENTITY),
+        ],
+    )
+    async def test_delete_cleaning_with_invalid_input_throws_error(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        test_cleaning: CleaningInDB,
+        id: int,
+        status_code: int,
+    ) -> None:
+        response = await client.delete(
+            app.url_path_for("cleanings:delete-cleaning-by-id", id=id)
+        )
+
+        assert response.status_code == status_code
