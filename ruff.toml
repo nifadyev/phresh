@@ -1,0 +1,17 @@
+fix = true
+ignore = [
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "COM812",  # Trailing comma missing
+]
+select = ["ALL"]
+
+[per-file-ignores]
+"backend/tests/*.py" = [
+    "S101",  # Use of `assert` detected
+    "PLR0913",  # Too many arguments to function call (N/5)
+]
+"*/routes/*.py" = [
+    "B008",  # Do not perform function call in argument defaults
+]
