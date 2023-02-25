@@ -17,6 +17,8 @@ alembic = "^1.9.2"
 sqlalchemy = "^1.4"  # databases does not support 2.0 for now
 # This should not be necessary if `asyncpg` is installed
 psycopg2-binary = "^2.9.5"
+pyjwt = "^2.6.0"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 
 
 [tool.poetry.group.dev.dependencies]
