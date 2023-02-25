@@ -1,4 +1,5 @@
 from app.models.core import CoreModel, DateTimeModelMixin, IDModelMixin
+from app.models.token import AccessToken
 from pydantic import EmailStr, constr
 
 
@@ -18,6 +19,7 @@ class UserCreate(CoreModel):
     email: EmailStr
     password: constr(min_length=7, max_length=100)
     username: constr(min_length=3, regex="^[a-zA-Z0-9_-]+$")
+
 
 class UserUpdate(CoreModel):
     """Users are allowed to update their email and/or username."""
@@ -41,4 +43,4 @@ class UserInDB(IDModelMixin, DateTimeModelMixin, UserBase):
 
 
 class UserPublic(IDModelMixin, DateTimeModelMixin, UserBase):
-    pass
+    access_token: AccessToken | None
