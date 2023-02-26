@@ -5,10 +5,12 @@ import alembic
 import pytest
 import pytest_asyncio
 from alembic.config import Config
+from app.core.config import JWT_TOKEN_PREFIX, SECRET_KEY
 from app.db.repositories.cleanings import CleaningsRepository
 from app.db.repositories.users import UsersRepository
 from app.models.cleaning import CleaningCreate, CleaningInDB
 from app.models.user import UserCreate, UserInDB
+from app.services import auth_service
 from asgi_lifespan import LifespanManager
 from databases import Database
 from fastapi import FastAPI
@@ -51,6 +53,19 @@ async def client(app: FastAPI) -> AsyncClient:
             headers={"Content-Type": "application/json"},
         ) as client:
             yield client
+
+
+@pytest.fixture()
+def authorized_client(client: AsyncClient, test_user: UserInDB) -> AsyncClient:
+    access_token = auth_service.create_access_token_for_user(
+        user=test_user, secret_key=str(SECRET_KEY)
+    )
+    client.headers = {
+        **client.headers,
+        "Authorization": f"{JWT_TOKEN_PREFIX} {access_token}",
+    }
+
+    return client
 
 
 @pytest_asyncio.fixture
