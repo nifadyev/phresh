@@ -1,4 +1,5 @@
 from app.models.core import CoreModel, DateTimeModelMixin, IDModelMixin
+from app.models.profile import ProfilePublic
 from app.models.token import AccessToken
 from pydantic import EmailStr, constr
 
@@ -44,3 +45,4 @@ class UserInDB(IDModelMixin, DateTimeModelMixin, UserBase):
 
 class UserPublic(IDModelMixin, DateTimeModelMixin, UserBase):
     access_token: AccessToken | None
+    profile: ProfilePublic | None
