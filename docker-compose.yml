@@ -1,17 +1,15 @@
 services:
 
   db:
+    container_name: db
     image: postgres:latest
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-      # docker-entrypoint-initdb.d will only work when your data dictionary is empty. So if you have volumes, be sure to delete them docker-compose down --volumes
-      # - ./movie-app/init_db.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
       - ./backend/.env
-    # ports:
-    #  - 5432:5432
 
   server:
+    container_name: phresh
     build:
       context: ./backend
       dockerfile: Dockerfile
