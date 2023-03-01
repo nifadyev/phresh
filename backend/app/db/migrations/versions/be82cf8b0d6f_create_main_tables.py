@@ -58,6 +58,7 @@ def create_cleanings_table() -> None:
             "cleaning_type", sa.Text, nullable=False, server_default="spot_clean"
         ),
         sa.Column("price", sa.Numeric(10, 2), nullable=False),
+        sa.Column("owner", sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE")),
         *timestamps(indexed=True),
     )
     op.execute(
@@ -117,15 +118,55 @@ def create_profiles_table() -> None:
     )
 
 
+def create_offers_table() -> None:
+    op.create_table(
+        "user_offers_for_cleanings",
+        sa.Column(
+            "user_id",  # 'user' is a reserved word in postgres, so going with user_id instead
+            sa.Integer,
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column(
+            "cleaning_id",  # going with `cleaning_id` for consistency
+            sa.Integer,
+            sa.ForeignKey("cleanings.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column(
+            "status", sa.Text, nullable=False, server_default="pending", index=True
+        ),
+        *timestamps(),
+    )
+    op.create_primary_key(
+        "pk_user_offers_for_cleanings",
+        "user_offers_for_cleanings",
+        ["user_id", "cleaning_id"],
+    )
+    op.execute(
+        """
+        CREATE TRIGGER update_user_offers_for_cleanings_modtime
+            BEFORE UPDATE
+            ON user_offers_for_cleanings
+            FOR EACH ROW
+        EXECUTE PROCEDURE update_updated_at_column();
+        """
+    )
+
+
 def upgrade() -> None:
     create_updated_at_trigger()
-    create_cleanings_table()
     create_users_table()
     create_profiles_table()
+    create_cleanings_table()
+    create_offers_table()
 
 
 def downgrade() -> None:
+    op.drop_table("user_offers_for_cleanings")
+    op.drop_table("cleanings")
     op.drop_table("profiles")
     op.drop_table("users")
-    op.drop_table("cleanings")
     op.execute("DROP FUNCTION update_updated_at_column")
