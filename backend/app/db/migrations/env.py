@@ -30,6 +30,10 @@ def run_migrations_online() -> None:
         # transaction management when creating databases.
         # Sqlalchemy always tries to run queries in a transaction, and postgres does not
         # allow users to create databases inside a transaction
+
+        # According to postgres documentation:
+        # You cannot be connected to the database you are about to remove
+        # Instead, connect to template1 or any other database and run this command again.
         default_engine = create_engine(str(DATABASE_URL), isolation_level="AUTOCOMMIT")
         # drop testing db if it exists and create a fresh one
         # TODO: Maybe add env variable to check if DB should be dropped (--reuse-db)
