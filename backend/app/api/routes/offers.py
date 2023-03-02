@@ -101,12 +101,11 @@ async def cancel_offer(
 
 @router.delete(
     "/",
-    response_model=int,
     name="offers:rescind-offer-from-user",
     dependencies=[Depends(check_offer_rescind_permissions)],
 )
 async def rescind_offer(
     offer: OfferInDB = Depends(get_offer_for_cleaning_from_current_user),
     offers_repo: OffersRepository = Depends(get_repository(OffersRepository)),
-) -> OfferPublic:
+) -> None:
     return await offers_repo.rescind_offer(offer=offer)

@@ -9,13 +9,28 @@ from app.models.user import UserInDB
 from fastapi import Depends, HTTPException, status
 
 
+async def get_offer_for_cleaning_from_user(
+    *, user: UserInDB, cleaning: CleaningInDB, offers_repo: OffersRepository
+) -> OfferInDB:
+    offer = await offers_repo.get_offer_for_cleaning_from_user(
+        cleaning=cleaning, user=user
+    )
+
+    if not offer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Offer not found."
+        )
+
+    return offer
+
+
 async def get_offer_for_cleaning_from_current_user(
     current_user: UserInDB = Depends(get_current_active_user),
     cleaning: CleaningInDB = Depends(get_cleaning_by_id_from_path),
     offers_repo: OffersRepository = Depends(get_repository(OffersRepository)),
 ) -> OfferInDB:
-    return await offers_repo.get_offer_for_cleaning_from_user(
-        user=current_user, cleaning=cleaning
+    return await get_offer_for_cleaning_from_user(
+        user=current_user, cleaning=cleaning, offers_repo=offers_repo
     )
 
 
@@ -24,8 +39,8 @@ async def get_offer_for_cleaning_from_user_by_path(
     cleaning: CleaningInDB = Depends(get_cleaning_by_id_from_path),
     offers_repo: OffersRepository = Depends(get_repository(OffersRepository)),
 ) -> OfferInDB:
-    return await offers_repo.get_offer_for_cleaning_from_user(
-        user=user, cleaning=cleaning
+    return await get_offer_for_cleaning_from_user(
+        user=user, cleaning=cleaning, offers_repo=offers_repo
     )
 
 
@@ -93,7 +108,7 @@ def check_offer_acceptance_permissions(
             detail="Only the owner of the cleaning may accept offers.",
         )
 
-    if offer.status != OfferStatus.rejected:
+    if offer.status != OfferStatus.pending:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Can only accept offers that are currently pending.",
