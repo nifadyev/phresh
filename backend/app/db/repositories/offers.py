@@ -49,6 +49,11 @@ RESCIND_OFFER_QUERY = """
     WHERE cleaning_id = :cleaning_id
     AND user_id = :user_id;
 """
+MARK_OFFER_COMPLETED_QUERY = """
+    UPDATE user_offers_for_cleanings
+    SET status = 'completed'
+    WHERE cleaning_id = :cleaning_id AND user_id = :user_id
+"""
 
 
 class OffersRepository(BaseRepository):
@@ -113,4 +118,12 @@ class OffersRepository(BaseRepository):
         return await self.db.execute(
             query=RESCIND_OFFER_QUERY,  # rescinding an offer deletes it as long as it's pending
             values={"cleaning_id": offer.cleaning_id, "user_id": offer.user_id},
+        )
+
+    async def mark_offer_completed(
+        self, *, cleaning: CleaningInDB, cleaner: UserInDB
+    ) -> OfferInDB:
+        return await self.db.fetch_one(
+            query=MARK_OFFER_COMPLETED_QUERY,  # owner of cleaning marks job status as completed
+            values={"cleaning_id": cleaning.id, "user_id": cleaner.id},
         )
