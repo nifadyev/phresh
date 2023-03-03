@@ -23,21 +23,25 @@ repos:
     hooks:
       - id: gitleaks
 -   repo: https://github.com/crate-ci/typos
-    rev: v1.13.10
+    rev: v1.13.16
     hooks:
     -   id: typos
         args: []
 # -   repo: local
-#     hooks:
-#       - id: ruff
-#         name: ruff
-#         # Workaround for VSCode (it does not support venv inside hooks)
-#         entry: bash -c 'source /home/neaph/Code/br-backend/env/bin/activate && ruff --config /home/neaph/Documents/ruff.toml --fix "$@"' --
-#         language: system
-#         types: [python]
+    # hooks:
+      # https://github.com/microsoft/vscode-python/issues/10165
+      # TODO: Run in backend VSCode Working Env
+      # - id: ruff
+      #   name: ruff
+      #   # Workaround for VSCode (it does not support venv inside hooks)
+      #   entry: bash -c 'source /home/neaph/.cache/pypoetry/virtualenvs/backend-vj3zePN0-py3.11/bin/activate && ruff --config /home/neaph/Code/phresh/backend/ruff.toml --fix "$@"' --
+      #   language: system
+      #   types: [python]
       # - id: black
       #   name: black
-      #   entry: bash -c 'source /home/neaph/Code/br-backend/env/bin/activate && black "$@"' --
+      #   # entry: bash -c 'source /home/neaph/Code/br-backend/env/bin/activate && black "$@"' --
+      # ! It actually works for ruff
+        #   entry: python3.11 -m poetry run black
       #   types: [python]
       #   language: system
       # - id: tests
