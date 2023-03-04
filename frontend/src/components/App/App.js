@@ -1,9 +1,10 @@
 import React from "react"
+import { LandingPage, Layout } from "../../components"
 
 export default function App() {
-  return (
-    <div className="App">
-      <h1>Phresh</h1>
-    </div>
-  )
+    return (
+      <Layout>
+        <LandingPage />
+      </Layout>
+    )
 }
