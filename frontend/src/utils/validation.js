@@ -19,7 +19,18 @@ export function validatePassword(password, length = 7) {
   return password?.length >= length
 }
 
+/**
+ * Ensures a username consists of only letters, numbers, underscores, and dashes
+ *
+ * @param {String} username - username to be validated
+ * @return {Boolean}
+ */
+export function validateUsername(username) {
+  return /^[a-zA-Z0-9_-]+$/.test(username)
+}
+
 export default {
   email: validateEmail,
-  password: validatePassword
+  password: validatePassword,
+  username: validateUsername
 }
