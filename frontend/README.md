@@ -1,5 +1,7 @@
 # Phresh Frontend
 
+! Code on website is not valid, check `codesandbox` code
+
 Based on [Tutorial](https://www.jeffastor.com/blog/phresh-frontend-bootstrapping-a-react-app#project-structure) Jeff Astor.
 
 Uses React17 since some packages (`@elastic/datemath` , `@elastic/eui`) do not support the latest React18.
