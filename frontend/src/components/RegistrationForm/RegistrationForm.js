@@ -1,4 +1,7 @@
 import React from "react"
+import { connect } from "react-redux"
+import { Actions as authActions, FETCHING_USER_FROM_TOKEN_SUCCESS } from "../../redux/auth"
+import { useNavigate } from "react-router-dom"
 import {
   EuiButton,
   EuiCheckbox,
@@ -10,6 +13,7 @@ import {
 } from "@elastic/eui"
 import { Link } from "react-router-dom"
 import validation from "../../utils/validation"
+import { extractErrorMessages } from "../../utils/errors"
 import { htmlIdGenerator } from "@elastic/eui/lib/services"
 import styled from "styled-components"
 
@@ -20,10 +24,7 @@ const NeedAccountLink = styled.span`
   font-size: 0.8rem;
 `
 
-export default function RegistrationForm({
-  registerUser = async ({ username, email, password }) =>
-    console.log(`Signing up with ${username}, ${email}, and ${password}.`)
-}) {
+function RegistrationForm({ authError, user, isLoading, isAuthenticated, registerUser }) {
   const [form, setForm] = React.useState({
     username: "",
     email: "",
@@ -32,6 +33,16 @@ export default function RegistrationForm({
   })
   const [agreedToTerms, setAgreedToTerms] = React.useState(false)
   const [errors, setErrors] = React.useState({})
+  const [hasSubmitted, setHasSubmitted] = React.useState(false)
+  const navigate = useNavigate()
+  const authErrorList = extractErrorMessages(authError)
+
+  // if the user is already authenticated, redirect them to the "/profile" page
+  React.useEffect(() => {
+    if (user?.email && isAuthenticated) {
+      navigate("/profile")
+    }
+  }, [user, navigate, isAuthenticated])
 
   const validateInput = (label, value) => {
     // grab validation function and run it on input if it exists
@@ -82,7 +93,29 @@ export default function RegistrationForm({
       return
     }
 
-    await registerUser({ username: form.username, email: form.email, password: form.password })
+    setHasSubmitted(true)
+    const action = await registerUser({
+      username: form.username,
+      email: form.email,
+      password: form.password
+    })
+    if (action?.type !== FETCHING_USER_FROM_TOKEN_SUCCESS) {
+      setForm((form) => ({ ...form, password: "", passwordConfirm: "" }))
+    }
+  }
+
+  const getFormErrors = () => {
+    const formErrors = []
+
+    if (errors.form) {
+      formErrors.push(errors.form)
+    }
+
+    if (hasSubmitted && authErrorList.length) {
+      return formErrors.concat(authErrorList)
+    }
+
+    return formErrors
   }
 
   return (
@@ -90,8 +123,8 @@ export default function RegistrationForm({
       <EuiForm
         component="form"
         onSubmit={handleSubmit}
-        isInvalid={Boolean(errors.form)}
-        error={[errors.form]}
+        isInvalid={Boolean(getFormErrors().length)}
+        error={getFormErrors()}
       >
         <EuiFormRow
           label="Email"
@@ -163,7 +196,7 @@ export default function RegistrationForm({
           onChange={(e) => setAgreedToTermsCheckbox(e)}
         />
         <EuiSpacer />
-        <EuiButton type="submit" fill>
+        <EuiButton type="submit" isLoading={isLoading} fill>
           Sign Up
         </EuiButton>
       </EuiForm>
@@ -176,3 +209,15 @@ export default function RegistrationForm({
     </RegistrationFormWrapper>
   )
 }
+
+export default connect(
+  (state) => ({
+    authError: state.auth.error,
+    isLoading: state.auth.isLoading,
+    isAuthenticated: state.auth.isAuthenticated,
+    user: state.auth.user
+  }),
+  {
+    registerUser: authActions.registerNewUser
+  }
+)(RegistrationForm)

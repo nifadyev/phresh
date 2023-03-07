@@ -1,10 +1,15 @@
 import initialState from "./initialState"
+import apiClient from "../services/apiClient"
 import axios from "axios"
 
 export const REQUEST_LOGIN = "@@auth/REQUEST_LOGIN"
 export const REQUEST_LOGIN_FAILURE = "@@auth/REQUEST_LOGIN_FAILURE"
 export const REQUEST_LOGIN_SUCCESS = "@@auth/REQUEST_LOGIN_SUCCESS"
 export const REQUEST_LOG_USER_OUT = "@@auth/REQUEST_LOG_USER_OUT"
+
+export const REQUEST_USER_SIGN_UP = "@@auth/REQUEST_USER_SIGN_UP"
+export const REQUEST_USER_SIGN_UP_SUCCESS = "@@auth/REQUEST_USER_SIGN_UP_SUCCESS"
+export const REQUEST_USER_SIGN_UP_FAILURE = "@@auth/REQUEST_USER_SIGN_UP_FAILURE"
 
 export const FETCHING_USER_FROM_TOKEN = "@@auth/FETCHING_USER_FROM_TOKEN"
 export const FETCHING_USER_FROM_TOKEN_SUCCESS = "@@auth/FETCHING_USER_FROM_TOKEN_SUCCESS"
@@ -29,6 +34,24 @@ export default function authReducer(state = initialState.auth, action = {}) {
         ...state,
         isLoading: false,
         error: null
+      }
+    case REQUEST_USER_SIGN_UP:
+      return {
+        ...state,
+        isLoading: true
+      }
+    case REQUEST_USER_SIGN_UP_SUCCESS:
+      return {
+        ...state,
+        isLoading: false,
+        error: null
+      }
+    case REQUEST_USER_SIGN_UP_FAILURE:
+      return {
+        ...state,
+        isLoading: false,
+        isAuthenticated: false,
+        error: action.error
       }
     case FETCHING_USER_FROM_TOKEN:
       return {
@@ -100,6 +123,33 @@ Actions.requestUserLogin = ({ email, password }) => {
       return dispatch({ type: REQUEST_LOGIN_FAILURE, error: error?.message })
     }
   }
+}
+
+Actions.registerNewUser = ({ username, email, password }) => {
+  return (dispatch) =>
+    dispatch(
+      apiClient({
+        url: `/users/`,
+        method: `POST`,
+        types: {
+          REQUEST: REQUEST_USER_SIGN_UP,
+          SUCCESS: REQUEST_USER_SIGN_UP_SUCCESS,
+          FAILURE: REQUEST_USER_SIGN_UP_FAILURE
+        },
+        options: {
+          data: { new_user: { username, email, password } },
+          params: {}
+        },
+        onSuccess: (res) => {
+          // stash the access_token our server returns
+          const access_token = res?.data?.access_token?.access_token
+          localStorage.setItem("access_token", access_token)
+
+          return dispatch(Actions.fetchUserFromToken(access_token))
+        },
+        onFailure: (res) => ({ success: false, status: res.status, error: res.error })
+      })
+    )
 }
 
 Actions.fetchUserFromToken = (access_token) => {
