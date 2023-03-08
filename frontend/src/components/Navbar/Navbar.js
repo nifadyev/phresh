@@ -114,7 +114,7 @@ function Navbar({ user, logUserOut, ...props }) {
               Find Cleaners
             </EuiHeaderLink>
 
-            <EuiHeaderLink iconType="tag" href="#">
+            <EuiHeaderLink iconType="tag" href="/cleaning-jobs">
               Find Jobs
             </EuiHeaderLink>
 
