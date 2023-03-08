@@ -1,5 +1,8 @@
 from app.api.dependencies.auth import get_current_active_user
-from app.api.dependencies.cleanings import get_cleaning_by_id_from_path
+from app.api.dependencies.cleanings import (
+    get_cleaning_by_id_from_path,
+    user_owns_cleaning,
+)
 from app.api.dependencies.database import get_repository
 from app.api.dependencies.offers import get_offer_for_cleaning_from_user_by_path
 from app.api.dependencies.users import get_user_by_username_from_path
@@ -19,7 +22,7 @@ async def check_evaluation_create_permissions(
     evals_repo: EvaluationsRepository = Depends(get_repository(EvaluationsRepository)),
 ) -> None:
     # Check that only owners of a cleaning can leave evaluations for that cleaning job
-    if cleaning.owner != current_user.id:
+    if not user_owns_cleaning(user=current_user, cleaning=cleaning):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Users are unable to leave evaluations for cleaning jobs they do not own.",
