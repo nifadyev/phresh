@@ -1,6 +1,13 @@
 from app.db.repositories.base import BaseRepository
-from app.models.cleaning import CleaningCreate, CleaningInDB, CleaningUpdate
+from app.db.repositories.users import UsersRepository
+from app.models.cleaning import (
+    CleaningCreate,
+    CleaningInDB,
+    CleaningPublic,
+    CleaningUpdate,
+)
 from app.models.user import UserInDB
+from databases import Database
 from fastapi import HTTPException, status
 
 CREATE_CLEANING_QUERY = """
@@ -37,6 +44,10 @@ DELETE_CLEANING_BY_ID_QUERY = """
 class CleaningsRepository(BaseRepository):
     """All database actions associated with the Cleaning resource."""
 
+    def __init__(self, db: Database) -> None:
+        super().__init__(db)
+        self.users_repo = UsersRepository(db)
+
     async def create_cleaning(
         self, *, new_cleaning: CleaningCreate, requesting_user: UserInDB
     ) -> CleaningInDB:
@@ -48,15 +59,21 @@ class CleaningsRepository(BaseRepository):
         return CleaningInDB(**cleaning)
 
     async def get_cleaning_by_id(
-        self, *, id: int, requesting_user: UserInDB
-    ) -> CleaningInDB | None:
-        cleaning = await self.db.fetch_one(
+        self, *, id: int, requesting_user: UserInDB, populate: bool = True
+    ) -> CleaningInDB | CleaningPublic | None:
+        cleaning_record = await self.db.fetch_one(
             query=GET_CLEANING_BY_ID_QUERY, values={"id": id}
         )
-        if not cleaning:
-            return None
 
-        return CleaningInDB(**cleaning)
+        if cleaning_record:
+            cleaning = CleaningInDB(**cleaning_record)
+            if populate:
+                return await self.populate_cleaning(
+                    cleaning=cleaning, requesting_user=requesting_user
+                )
+            return cleaning
+
+        return None
 
     async def list_all_user_cleanings(
         self, requesting_user: UserInDB
@@ -92,4 +109,13 @@ class CleaningsRepository(BaseRepository):
     async def delete_cleaning_by_id(self, *, cleaning: CleaningInDB) -> int:
         return await self.db.execute(
             query=DELETE_CLEANING_BY_ID_QUERY, values={"id": cleaning.id}
+        )
+
+    async def populate_cleaning(
+        self, *, cleaning: CleaningInDB, requesting_user: UserInDB = None
+    ) -> CleaningPublic:
+        return CleaningPublic(
+            **cleaning.dict(exclude={"owner"}),
+            owner=await self.users_repo.get_user_by_id(user_id=cleaning.owner),
+            # any other populated fields for cleaning public would be tacked on here
         )
