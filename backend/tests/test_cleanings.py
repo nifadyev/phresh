@@ -134,9 +134,9 @@ class TestGetCleaning:
             )
         )
 
-        cleaning = CleaningInDB(**response.json())
+        cleaning = CleaningPublic(**response.json()).dict(exclude={"owner"})
         assert response.status_code == status.HTTP_200_OK
-        assert cleaning == test_cleaning
+        assert cleaning == test_cleaning.dict(exclude={"owner"})
 
     async def test_unauthorized_users_cant_access_cleanings(
         self, app: FastAPI, client: AsyncClient, test_cleaning: CleaningInDB
@@ -336,7 +336,7 @@ class TestDeleteCleaning:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     @pytest.mark.parametrize(
-        "id, status_code",
+        ("id", "status_code"),
         (
             (5000000, status.HTTP_404_NOT_FOUND),
             (0, status.HTTP_422_UNPROCESSABLE_ENTITY),
