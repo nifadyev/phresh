@@ -22,6 +22,11 @@ REGISTER_NEW_USER_QUERY = """
     VALUES (:username, :email, :password, :salt)
     RETURNING id, username, email, email_verified, password, salt, is_active, is_superuser, created_at, updated_at;
 """
+GET_USER_BY_ID_QUERY = """
+    SELECT id, username, email, email_verified, password, salt, is_active, is_superuser, created_at, updated_at
+    FROM users
+    WHERE id = :id;
+"""
 
 
 class UsersRepository(BaseRepository):
@@ -29,6 +34,21 @@ class UsersRepository(BaseRepository):
         super().__init__(db)
         self.auth_service = auth_service
         self.profiles_repo = ProfilesRepository(db)
+
+    async def get_user_by_id(
+        self, *, user_id: int, populate: bool = True
+    ) -> UserPublic | None:
+        user_record = await self.db.fetch_one(
+            query=GET_USER_BY_ID_QUERY, values={"id": user_id}
+        )
+
+        if user_record:
+            user = UserInDB(**user_record)
+            if populate:
+                return await self.populate_user(user=user)
+            return user
+
+        return None
 
     async def get_user_by_email(
         self, *, email: EmailStr, populate: bool = True
@@ -44,6 +64,8 @@ class UsersRepository(BaseRepository):
 
             return user
 
+        return None
+
     async def get_user_by_username(
         self, *, username: str, populate: bool = True
     ) -> UserInDB | None:
@@ -57,6 +79,8 @@ class UsersRepository(BaseRepository):
                 return await self.populate_user(user=user)
 
             return user
+
+        return None
 
     async def register_new_user(self, *, new_user: UserCreate) -> UserInDB:
         # make sure email isn't already taken
