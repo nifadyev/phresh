@@ -7,7 +7,7 @@ export default function CleaningJobsPage() {
     <>
       <Routes>
         <Route path="/" element={<CleaningJobsHome />} />
-        <Route path=":cleaning_id" element={<CleaningJobView />} />
+        <Route path=":cleaning_id/*" element={<CleaningJobView />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>

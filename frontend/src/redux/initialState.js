@@ -1,6 +1,8 @@
 export default {
   auth: {
     isLoading: false,
+    isUpdating: false,
+    isAuthenticated: false,
     error: false,
     user: {}
   },
