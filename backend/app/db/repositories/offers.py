@@ -1,7 +1,9 @@
 from app.db.repositories.base import BaseRepository
+from app.db.repositories.users import UsersRepository
 from app.models.cleaning import CleaningInDB
-from app.models.offer import OfferCreate, OfferInDB, OfferUpdate
+from app.models.offer import OfferCreate, OfferInDB, OfferPublic, OfferUpdate
 from app.models.user import UserInDB
+from databases import Database
 
 CREATE_OFFER_FOR_CLEANING_QUERY = """
     INSERT INTO user_offers_for_cleanings (cleaning_id, user_id, status)
@@ -57,6 +59,10 @@ MARK_OFFER_COMPLETED_QUERY = """
 
 
 class OffersRepository(BaseRepository):
+    def __init__(self, db: Database) -> None:
+        super().__init__(db)
+        self.users_repo = UsersRepository(db)
+
     async def create_offer_for_cleaning(self, *, new_offer: OfferCreate) -> OfferInDB:
         created_offer = await self.db.fetch_one(
             query=CREATE_OFFER_FOR_CLEANING_QUERY,
@@ -66,13 +72,24 @@ class OffersRepository(BaseRepository):
         return OfferInDB(**created_offer)
 
     async def list_offers_for_cleaning(
-        self, *, cleaning: CleaningInDB
-    ) -> list[OfferInDB]:
-        offers = await self.db.fetch_all(
+        self, *, cleaning: CleaningInDB, populate: bool = True
+    ) -> list[OfferInDB | OfferPublic]:
+        offer_records = await self.db.fetch_all(
             query=LIST_OFFERS_FOR_CLEANING_QUERY, values={"cleaning_id": cleaning.id}
         )
+        offers = [OfferInDB(**offer) for offer in offer_records]
 
-        return [OfferInDB(**o) for o in offers]
+        if populate:
+            return [await self.populate_offer(offer=offer) for offer in offers]
+
+        return offers
+
+    async def populate_offer(self, *, offer: OfferInDB) -> OfferPublic:
+        return OfferPublic(
+            **offer.dict(),
+            user=await self.users_repo.get_user_by_id(user_id=offer.user_id),
+            # could populate cleaning here as well if needed
+        )
 
     async def get_offer_for_cleaning_from_user(
         self, *, cleaning: CleaningInDB, user: UserInDB
