@@ -12,7 +12,7 @@ from app.db.repositories.cleanings import CleaningsRepository
 from app.db.repositories.evaluations import EvaluationsRepository
 from app.db.repositories.offers import OffersRepository
 from app.db.repositories.users import UsersRepository
-from app.models.cleaning import CleaningCreate, CleaningInDB
+from app.models.cleaning import CleaningCreate, CleaningInDB, CleaningUpdate
 from app.models.evaluation import EvaluationCreate
 from app.models.offer import OfferCreate, OfferUpdate
 from app.models.user import UserCreate, UserInDB
@@ -288,3 +288,39 @@ async def test_list_of_cleanings_with_evaluated_offer(
         )
         for i in range(5)
     ]
+
+
+@pytest_asyncio.fixture()
+async def test_list_of_new_and_updated_cleanings(
+    db: Database, test_user_list: list[UserInDB]
+) -> list[CleaningInDB]:
+    cleanings_repo = CleaningsRepository(db)
+    new_cleanings = [
+        await cleanings_repo.create_cleaning(
+            new_cleaning=CleaningCreate(
+                name=f"feed item cleaning job - {cleaning_index}",
+                description=f"test description for feed item cleaning: {cleaning_index}",
+                price=float(f"{cleaning_index}9.99"),
+                cleaning_type=["full_clean", "spot_clean", "dust_up"][
+                    cleaning_index % 3
+                ],
+            ),
+            requesting_user=test_user_list[cleaning_index % len(test_user_list)],
+        )
+        for cleaning_index in range(50)
+    ]
+
+    # update every 4 cleanings
+    # ? range with step=4
+    for cleaning_index, cleaning in enumerate(new_cleanings):
+        if cleaning_index % 4 == 0:
+            updated_cleaning = await cleanings_repo.update_cleaning(
+                cleaning=cleaning,
+                cleaning_update=CleaningUpdate(
+                    description=f"Updated {cleaning.description}",
+                    price=cleaning.price + 100.0,
+                ),
+            )
+            new_cleanings[cleaning_index] = updated_cleaning
+
+    return new_cleanings
