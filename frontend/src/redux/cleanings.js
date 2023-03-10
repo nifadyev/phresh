@@ -1,4 +1,5 @@
 import initialState from "./initialState"
+import { REQUEST_LOG_USER_OUT } from "./auth"
 import apiClient from "../services/apiClient"
 
 export const CREATE_CLEANING_JOB = "@@cleanings/CREATE_CLEANING_JOB"
@@ -13,6 +14,12 @@ export const CLEAR_CURRENT_CLEANING_JOB = "@@cleanings/CLEAR_CURRENT_CLEANING_JO
 export const UPDATE_CLEANING_JOB = "@@cleanings/UPDATE_CLEANING_JOB"
 export const UPDATE_CLEANING_JOB_SUCCESS = "@@cleanings/UPDATE_CLEANING_JOB_SUCCESS"
 export const UPDATE_CLEANING_JOB_FAILURE = "@@cleanings/UPDATE_CLEANING_JOB_FAILURE"
+
+export const FETCH_ALL_USER_OWNED_CLEANING_JOBS = "@@cleanings/FETCH_ALL_USER_OWNED_CLEANING_JOBS"
+export const FETCH_ALL_USER_OWNED_CLEANING_JOBS_SUCCESS =
+  "@@cleanings/FETCH_ALL_USER_OWNED_CLEANING_JOBS_SUCCESS"
+export const FETCH_ALL_USER_OWNED_CLEANING_JOBS_FAILURE =
+  "@@cleanings/FETCH_ALL_USER_OWNED_CLEANING_JOBS_FAILURE"
 
 export default function cleaningsReducer(state = initialState.cleanings, action = {}) {
   switch (action.type) {
@@ -85,6 +92,32 @@ export default function cleaningsReducer(state = initialState.cleanings, action 
         isUpdating: false,
         error: action.error
       }
+    case FETCH_ALL_USER_OWNED_CLEANING_JOBS:
+      return {
+        ...state,
+        isLoading: true
+      }
+    case FETCH_ALL_USER_OWNED_CLEANING_JOBS_SUCCESS:
+      return {
+        ...state,
+        isLoading: false,
+        error: null,
+        data: {
+          ...state.data,
+          ...action.data.reduce((acc, job) => {
+            acc[job.id] = job
+            return acc
+          }, {})
+        }
+      }
+    case FETCH_ALL_USER_OWNED_CLEANING_JOBS_FAILURE:
+      return {
+        ...state,
+        isLoading: false,
+        error: action.error
+      }
+    case REQUEST_LOG_USER_OUT:
+      return initialState.cleanings
     default:
       return state
   }
@@ -137,6 +170,22 @@ Actions.updateCleaningJob = ({ cleaning_id, cleaning_update }) => {
     },
     options: {
       data: { cleaning_update },
+      params: {}
+    }
+  })
+}
+
+Actions.fetchAllUserOwnedCleaningJobs = () => {
+  return apiClient({
+    url: `/cleanings/`,
+    method: `GET`,
+    types: {
+      REQUEST: FETCH_ALL_USER_OWNED_CLEANING_JOBS,
+      SUCCESS: FETCH_ALL_USER_OWNED_CLEANING_JOBS_SUCCESS,
+      FAILURE: FETCH_ALL_USER_OWNED_CLEANING_JOBS_FAILURE
+    },
+    options: {
+      data: {},
       params: {}
     }
   })
