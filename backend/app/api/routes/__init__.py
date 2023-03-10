@@ -1,5 +1,6 @@
 from app.api.routes.cleanings import router as cleanings_router
 from app.api.routes.evaluations import router as evaluations_router
+from app.api.routes.feed import router as feed_router
 from app.api.routes.offers import router as offers_router
 from app.api.routes.profiles import router as profiles_router
 from app.api.routes.users import router as users_router
@@ -15,3 +16,4 @@ router.include_router(
 router.include_router(
     evaluations_router, prefix="/users/{username}/evaluations", tags=["evaluations"]
 )
+router.include_router(feed_router, prefix="/feed", tags=["feed"])
