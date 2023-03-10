@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import datetime, timedelta, timezone
+from itertools import chain
 
 import pytest
 from app.models.cleaning import CleaningInDB
@@ -88,7 +89,7 @@ class TestCleaningFeed:
 
         # Ensure that none of the items in any response exist in any other response
         length_of_all_id_combos = sum(len(combo) for combo in combos)
-        assert len(set(*combos)) == length_of_all_id_combos
+        assert len(set(chain(*combos))) == length_of_all_id_combos
 
     async def test_cleaning_feed_has_created_and_updated_items_for_modified_cleaning_jobs(
         self,

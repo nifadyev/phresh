@@ -78,9 +78,9 @@ class FeedRepository(BaseRepository):
     async def populate_cleaning_feed_item(
         self, *, cleaning_feed_item: Record
     ) -> CleaningFeedItem:
-        return CleaningFeedItem(
-            **{k: v for k, v in cleaning_feed_item.items() if k != "owner"},
-            owner=await self.users_repo.get_user_by_id(
-                user_id=cleaning_feed_item["owner"]
-            )
+        feed_item = CleaningFeedItem(**cleaning_feed_item)
+        feed_item.owner = await self.users_repo.get_user_by_id(
+            user_id=cleaning_feed_item["owner"]
         )
+
+        return feed_item
