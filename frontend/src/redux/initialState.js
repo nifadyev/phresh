@@ -8,8 +8,15 @@ export default {
   },
   cleanings: {
     isLoading: false,
+    isUpdating: false,
     error: null,
     data: {},
     currentCleaningJob: null
+  },
+  offers: {
+    isLoading: false,
+    isUpdating: false,
+    error: null,
+    data: {}
   }
 }
