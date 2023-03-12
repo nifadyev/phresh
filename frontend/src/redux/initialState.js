@@ -18,5 +18,11 @@ export default {
     isUpdating: false,
     error: null,
     data: {}
+  },
+  feed: {
+    isLoading: false,
+    error: null,
+    data: {},
+    hasNext: {}
   }
 }
