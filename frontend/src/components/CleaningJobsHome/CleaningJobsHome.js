@@ -3,8 +3,8 @@ import { connect } from "react-redux"
 import {
   EuiPage,
   EuiPageBody,
-  EuiPageContent_Deprecated,
-  EuiPageContentBody_Deprecated,
+  EuiPageContent,
+  EuiPageContentBody,
   EuiPageHeader,
   EuiPageHeaderSection,
   EuiTitle
@@ -37,13 +37,13 @@ function CleaningJobsHome({ user }) {
             </EuiTitle>
           </EuiPageHeaderSection>
         </StyledEuiPageHeader>
-        <EuiPageContent_Deprecated verticalPosition="center" horizontalPosition="center">
-          <EuiPageContentBody_Deprecated>
+        <EuiPageContent verticalPosition="center" horizontalPosition="center">
+          <EuiPageContentBody>
             <>
               <CleaningJobCreateForm />
             </>
-          </EuiPageContentBody_Deprecated>
-        </EuiPageContent_Deprecated>
+          </EuiPageContentBody>
+        </EuiPageContent>
       </EuiPageBody>
     </StyledEuiPage>
   )

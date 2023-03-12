@@ -3,9 +3,8 @@ import {
   EuiPage,
   EuiPageBody,
 //   EuiPageContent is deprecated - https://github.com/elastic/eui/pull/5768
-  EuiPageContentBody_Deprecated,
-  EuiPageContent_Deprecated,
-  EuiPageSection,
+  EuiPageContentBody,
+  EuiPageContent,
   EuiFlexGroup,
   EuiFlexItem
 } from "@elastic/eui"
@@ -30,10 +29,10 @@ const LandingTitle = styled.h1`
   margin: 2rem 0;
 `
 
-const StyledEuiPageContent = styled(EuiPageContent_Deprecated)`
+const StyledEuiPageContent = styled(EuiPageContent)`
   border-radius: 50%;
 `
-const StyledEuiPageContentBody = styled(EuiPageContentBody_Deprecated)`
+const StyledEuiPageContentBody = styled(EuiPageContentBody)`
   max-width: 400px;
   max-height: 400px;
 

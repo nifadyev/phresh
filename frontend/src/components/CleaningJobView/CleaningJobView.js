@@ -11,8 +11,8 @@ import {
   EuiFlexItem,
   EuiPage,
   EuiPageBody,
-  EuiPageContent_Deprecated,
-  EuiPageContentBody_Deprecated,
+  EuiPageContent,
+  EuiPageContentBody,
   EuiLoadingSpinner,
   EuiTitle
 } from "@elastic/eui"
@@ -126,7 +126,7 @@ function CleaningJobView({
   return (
     <StyledEuiPage>
       <EuiPageBody component="section">
-        <EuiPageContent_Deprecated verticalPosition="center" horizontalPosition="center" paddingSize="none">
+        <EuiPageContent verticalPosition="center" horizontalPosition="center" paddingSize="none">
           <StyledFlexGroup alignItems="center" direction="row" responsive={false}>
             <EuiFlexItem>
               <EuiFlexGroup
@@ -162,14 +162,14 @@ function CleaningJobView({
             </EuiFlexItem>
           </StyledFlexGroup>
 
-          <EuiPageContentBody_Deprecated>
+          <EuiPageContentBody>
             <Routes>
               <Route path="/" element={viewCleaningJobElement} />
               <Route path="/edit" element={editCleaningJobElement} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
-          </EuiPageContentBody_Deprecated>
-        </EuiPageContent_Deprecated>
+          </EuiPageContentBody>
+        </EuiPageContent>
 
         <Routes>
           <Route path="/" element={cleaningJobOffersTableElement} />

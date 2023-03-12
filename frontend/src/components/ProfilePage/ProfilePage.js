@@ -6,8 +6,8 @@ import {
   EuiIcon,
   EuiPage,
   EuiPageBody,
-  EuiPageContent_Deprecated,
-  EuiPageContentBody_Deprecated,
+  EuiPageContent,
+  EuiPageContentBody,
   EuiPageHeader,
   EuiPageHeaderSection,
   EuiTitle,
@@ -29,7 +29,7 @@ const StyledEuiPageHeader = styled(EuiPageHeader)`
     font-size: 3.5rem;
   }
 `
-const StyledEuiPageContentBody = styled(EuiPageContentBody_Deprecated)`
+const StyledEuiPageContentBody = styled(EuiPageContentBody)`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -50,7 +50,7 @@ function ProfilePage({ user }) {
             </EuiTitle>
           </EuiPageHeaderSection>
         </StyledEuiPageHeader>
-        <EuiPageContent_Deprecated verticalPosition="center" horizontalPosition="center">
+        <EuiPageContent verticalPosition="center" horizontalPosition="center">
           <StyledEuiPageContentBody>
             <EuiAvatar
               size="xl"
@@ -83,7 +83,7 @@ function ProfilePage({ user }) {
               </p>
             </EuiText>
           </StyledEuiPageContentBody>
-        </EuiPageContent_Deprecated>
+        </EuiPageContent>
       </EuiPageBody>
     </StyledEuiPage>
   )
