@@ -3,7 +3,8 @@ export default {
     isLoading: false,
     isUpdating: false,
     isAuthenticated: false,
-    error: false,
+    error: null,
+    userLoaded: false,
     user: {}
   },
   cleanings: {
@@ -24,5 +25,8 @@ export default {
     error: null,
     data: {},
     hasNext: {}
+  },
+  ui: {
+    toastList: []
   }
 }

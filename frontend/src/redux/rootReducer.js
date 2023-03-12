@@ -1,15 +1,17 @@
 import { combineReducers } from "redux"
 
-import authReducer from "redux/auth"
-import cleaningsReducer from "redux/cleanings"
-import offersReducer from "redux/offers"
-import feedReducer from "redux/feed"
+import authReducer from "./auth"
+import cleaningsReducer from "./cleanings"
+import offersReducer from "./offers"
+import feedReducer from "./feed"
+import uiReducer from "./ui"
 
 const rootReducer = combineReducers({
   auth: authReducer,
   cleanings: cleaningsReducer,
+  offers: offersReducer,
   feed: feedReducer,
-  offers: offersReducer
+  ui: uiReducer
 })
 
 export default rootReducer
