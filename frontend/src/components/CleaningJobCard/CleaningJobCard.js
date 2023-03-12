@@ -94,11 +94,13 @@ export default function CleaningJobCard({
       textAlign="left"
       image={image}
       title={title}
+      betaBadgeLabel={betaBadgeLabel}
+      betaBadgeTooltipContent={betaBadgeTooltipContent}
     //   Deprecation PR - https://github.com/elastic/eui/pull/4798
-      betaBadgeProps={{
-        label: {betaBadgeLabel},
-        tooltipcontent: {betaBadgeTooltipContent},
-      }}
+    //   betaBadgeProps={{
+    //     label: {betaBadgeLabel},
+    //     tooltipcontent: {betaBadgeTooltipContent},
+    //   }}
       description={cleaningJob.description}
       footer={footer}
     />
