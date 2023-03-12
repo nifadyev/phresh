@@ -8,16 +8,16 @@ import {
   EuiFlexGroup,
   EuiFlexItem
 } from "@elastic/eui"
-import { Carousel, CarouselTitle } from "../../components"
-import { useCarousel } from "../../hooks/useCarousel"
-import heroGirl from "../../assets/img/HeroGirl.svg"
-import dorm from "../../assets/img/Bed.svg"
-import bedroom from "../../assets/img/Bedroom.svg"
-import bathroom from "../../assets/img/Bathroom.svg"
-import livingRoom from "../../assets/img/Living_room_interior.svg"
-import kitchen from "../../assets/img/Kitchen.svg"
-import readingRoom from "../../assets/img/Reading_room.svg"
-import tvRoom from "../../assets/img/TV_room.svg"
+import { Carousel, CarouselTitle } from "components"
+import { useCarousel } from "hooks/ui/useCarousel"
+import dorm from "assets/img/Bed.svg"
+import bedroom from "assets/img/Bedroom.svg"
+import bathroom from "assets/img/Bathroom.svg"
+import heroGirl from "assets/img/HeroGirl.svg"
+import livingRoom from "assets/img/Living_room_interior.svg"
+import kitchen from "assets/img/Kitchen.svg"
+import readingRoom from "assets/img/Reading_room.svg"
+import tvRoom from "assets/img/TV_room.svg"
 import styled from "styled-components"
 
 const StyledEuiPage = styled(EuiPage)`
