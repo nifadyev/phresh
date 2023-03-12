@@ -1,6 +1,5 @@
 import React from "react"
-import { connect } from "react-redux"
-import { Actions as authActions } from "../../redux/auth"
+import { useAuthenticatedUser } from "hooks/auth/useAuthenticatedUser"
 import {
   EuiAvatar,
   EuiIcon,
@@ -15,8 +14,9 @@ import {
   EuiFlexItem,
   EuiLink
 } from "@elastic/eui"
+import { UserAvatar } from "components"
 import { Link, useNavigate } from "react-router-dom"
-import loginIcon from "../../assets/img/loginIcon.svg"
+import loginIcon from "assets/img/loginIcon.svg"
 import styled from "styled-components"
 
 const LogoSection = styled(EuiHeaderLink)`
@@ -33,9 +33,10 @@ const AvatarMenu = styled.div`
   }
 `
 
-function Navbar({ user, logUserOut, ...props }) {
-  const [avatarMenuOpen, setAvatarMenuOpen] = React.useState(false)
+export default function Navbar() {
   const navigate = useNavigate()
+  const [avatarMenuOpen, setAvatarMenuOpen] = React.useState(false)
+  const { user, logUserOut } = useAuthenticatedUser()
 
   const toggleAvatarMenu = () => setAvatarMenuOpen(!avatarMenuOpen)
 
@@ -53,12 +54,7 @@ function Navbar({ user, logUserOut, ...props }) {
       onClick={() => user?.profile && toggleAvatarMenu()}
     >
       {user?.profile ? (
-        <EuiAvatar
-          size="l"
-          name={user.profile.full_name || user.username || "Anonymous"}
-          initialsLength={2}
-          imageUrl={user.profile.image}
-        />
+        <UserAvatar size="l" user={user} initialsLength={2} />
       ) : (
         <Link to="/login">
           <EuiAvatar size="l" color="#1E90FF" name="user" imageUrl={loginIcon} />
@@ -72,12 +68,7 @@ function Navbar({ user, logUserOut, ...props }) {
 
     return (
       <AvatarMenu>
-        <EuiAvatar
-          size="xl"
-          name={user.profile.full_name || user.username || "Anonymous"}
-          initialsLength={2}
-          imageUrl={user.profile.image}
-        />
+        <UserAvatar size="xl" user={user} initialsLength={2} />
         <EuiFlexGroup direction="column" className="avatar-actions">
           <EuiFlexItem grow={1}>
             <p>
@@ -101,7 +92,7 @@ function Navbar({ user, logUserOut, ...props }) {
   }
 
   return (
-    <EuiHeader style={props.style || {}}>
+    <EuiHeader>
       <EuiHeaderSection>
         <EuiHeaderSectionItem border="right">
           <LogoSection href="/">
@@ -114,7 +105,7 @@ function Navbar({ user, logUserOut, ...props }) {
               Find Cleaners
             </EuiHeaderLink>
 
-            <EuiHeaderLink iconType="tag" href="/cleaning-jobs">
+            <EuiHeaderLink iconType="tag" onClick={() => navigate("/cleaning-jobs")}>
               Find Jobs
             </EuiHeaderLink>
 
@@ -140,7 +131,3 @@ function Navbar({ user, logUserOut, ...props }) {
     </EuiHeader>
   )
 }
-
-export default connect((state) => ({ user: state.auth.user }), {
-  logUserOut: authActions.logUserOut
-})(Navbar)
