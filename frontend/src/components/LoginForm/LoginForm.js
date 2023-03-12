@@ -1,7 +1,8 @@
 import React from "react"
 import { connect } from "react-redux"
-import { Actions as authActions, FETCHING_USER_FROM_TOKEN_SUCCESS } from "../../redux/auth"
-import { useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
+import { useLoginAndRegistrationForm } from "hooks/ui/useLoginAndRegistrationForm"
+import { Actions as authActions, FETCHING_USER_FROM_TOKEN_SUCCESS } from "redux/auth"
 import {
   EuiButton,
   EuiFieldText,
@@ -10,8 +11,6 @@ import {
   EuiFieldPassword,
   EuiSpacer
 } from "@elastic/eui"
-import { Link } from "react-router-dom"
-import validation from "../../utils/validation"
 import styled from "styled-components"
 
 const LoginFormWrapper = styled.div`
@@ -21,35 +20,18 @@ const NeedAccountLink = styled.span`
   font-size: 0.8rem;
 `
 
-function LoginForm({ user, authError, isLoading, isAuthenticated, requestUserLogin }) {
-  const [form, setForm] = React.useState({
-    email: "",
-    password: ""
-  })
-  const [errors, setErrors] = React.useState({})
-  const [hasSubmitted, setHasSubmitted] = React.useState(false)
-  const navigate = useNavigate()
-
-  // if the user is already authenticated, redirect them to the "/profile" page
-  React.useEffect(() => {
-    if (user?.email && isAuthenticated) {
-      navigate("/profile")
-    }
-  }, [user, navigate, isAuthenticated])
-
-  const validateInput = (label, value) => {
-    // grab validation function and run it on input if it exists
-    // if it doesn't exists, just assume the input is valid
-    const isValid = validation?.[label] ? validation?.[label]?.(value) : true
-    // set an error if the validation function did NOT return true
-    setErrors((errors) => ({ ...errors, [label]: !isValid }))
-  }
-
-  const handleInputChange = (label, value) => {
-    validateInput(label, value)
-
-    setForm((form) => ({ ...form, [label]: value }))
-  }
+function LoginForm({ requestUserLogin }) {
+  const {
+    form,
+    setForm,
+    errors,
+    setErrors,
+    isLoading,
+    getFormErrors,
+    validateInput,
+    handleInputChange,
+    setHasSubmitted
+  } = useLoginAndRegistrationForm({ isLogin: true })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -68,17 +50,6 @@ function LoginForm({ user, authError, isLoading, isAuthenticated, requestUserLog
     if (action?.type !== FETCHING_USER_FROM_TOKEN_SUCCESS) {
       setForm((form) => ({ ...form, password: "" }))
     }
-  }
-
-  const getFormErrors = () => {
-    const formErrors = []
-    if (authError && hasSubmitted) {
-      formErrors.push(`Invalid credentials. Please try again.`)
-    }
-    if (errors.form) {
-      formErrors.push(errors.form)
-    }
-    return formErrors
   }
 
   return (
@@ -135,16 +106,4 @@ function LoginForm({ user, authError, isLoading, isAuthenticated, requestUserLog
   )
 }
 
-const mapStateToProps = (state) => ({
-  authError: state.auth.error,
-  isLoading: state.auth.isLoading,
-  isAuthenticated: state.auth.isAuthenticated,
-  user: state.auth.user
-})
-
-const mapDispatchToProps = (dispatch) => ({
-  requestUserLogin: ({ email, password }) =>
-    dispatch(authActions.requestUserLogin({ email, password }))
-})
-
-export default connect(mapStateToProps, mapDispatchToProps)(LoginForm)
+export default connect(null, { requestUserLogin: authActions.requestUserLogin })(LoginForm)
