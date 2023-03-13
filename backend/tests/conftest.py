@@ -12,7 +12,12 @@ from app.db.repositories.cleanings import CleaningsRepository
 from app.db.repositories.evaluations import EvaluationsRepository
 from app.db.repositories.offers import OffersRepository
 from app.db.repositories.users import UsersRepository
-from app.models.cleaning import CleaningCreate, CleaningInDB, CleaningUpdate
+from app.models.cleaning import (
+    CleaningCreate,
+    CleaningInDB,
+    CleaningPublic,
+    CleaningUpdate,
+)
 from app.models.evaluation import EvaluationCreate
 from app.models.offer import OfferCreate, OfferUpdate
 from app.models.user import UserCreate, UserInDB
@@ -90,7 +95,7 @@ def create_authorized_client(client: AsyncClient) -> Callable:
 
 
 @pytest_asyncio.fixture
-async def test_cleaning(db: Database, test_user: UserInDB) -> CleaningInDB:
+async def test_cleaning(db: Database, test_user: UserInDB) -> CleaningPublic:
     cleaning_repo = CleaningsRepository(db)
     new_cleaning = CleaningCreate(
         name="fake cleaning name",
@@ -189,7 +194,8 @@ async def test_cleaning_with_offers(
 
     for user in test_user_list:
         await offers_repo.create_offer_for_cleaning(
-            new_offer=OfferCreate(cleaning_id=created_cleaning.id, user_id=user.id)
+            new_offer=OfferCreate(cleaning_id=created_cleaning.id, user_id=user.id),
+            requesting_user=user,
         )
 
     return created_cleaning
@@ -219,7 +225,8 @@ async def test_cleaning_with_accepted_offer(
     for user in test_user_list:
         offers.append(
             await offers_repo.create_offer_for_cleaning(
-                new_offer=OfferCreate(cleaning_id=created_cleaning.id, user_id=user.id)
+                new_offer=OfferCreate(cleaning_id=created_cleaning.id, user_id=user.id),
+                requesting_user=user,
             )
         )
 
@@ -246,7 +253,8 @@ async def create_cleaning_with_evaluated_offer_helper(
         new_cleaning=cleaning_create, requesting_user=owner
     )
     offer = await offers_repo.create_offer_for_cleaning(
-        new_offer=OfferCreate(cleaning_id=created_cleaning.id, user_id=cleaner.id)
+        new_offer=OfferCreate(cleaning_id=created_cleaning.id, user_id=cleaner.id),
+        requesting_user=cleaner,
     )
     await offers_repo.accept_offer(
         offer=offer, offer_update=OfferUpdate(status="accepted")
@@ -288,6 +296,34 @@ async def test_list_of_cleanings_with_evaluated_offer(
         )
         for i in range(5)
     ]
+
+
+@pytest_asyncio.fixture()
+async def test_list_of_cleanings_with_pending_offers(
+    db: Database, test_user: UserInDB, test_user_list: list[UserInDB]
+) -> list[CleaningInDB]:
+    cleaning_repo = CleaningsRepository(db)
+    offers_repo = OffersRepository(db)
+    cleanings = []
+
+    for i in range(5):
+        created_cleaning = await cleaning_repo.create_cleaning(
+            new_cleaning=CleaningCreate(
+                name=f"test cleaning with offers - {i}",
+                description=f"test desc for cleaning with offers - {i}",
+                price=float(f"{i}9.99"),
+                cleaning_type="spot_clean",
+            ),
+            requesting_user=test_user,
+        )
+
+        for user in test_user_list:
+            await offers_repo.create_offer_for_cleaning(
+                new_offer=OfferCreate(cleaning_id=created_cleaning.id, user_id=user.id)
+            )
+        cleanings.append(created_cleaning)
+
+    return cleanings
 
 
 @pytest_asyncio.fixture()
