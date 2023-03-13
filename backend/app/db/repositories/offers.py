@@ -54,7 +54,9 @@ RESCIND_OFFER_QUERY = """
 MARK_OFFER_COMPLETED_QUERY = """
     UPDATE user_offers_for_cleanings
     SET status = 'completed'
-    WHERE cleaning_id = :cleaning_id AND user_id = :user_id
+    WHERE cleaning_id = :cleaning_id
+      AND user_id     = :user_id
+    RETURNING *;
 """
 
 
@@ -63,21 +65,29 @@ class OffersRepository(BaseRepository):
         super().__init__(db)
         self.users_repo = UsersRepository(db)
 
-    async def create_offer_for_cleaning(self, *, new_offer: OfferCreate) -> OfferInDB:
+    async def create_offer_for_cleaning(
+        self, *, new_offer: OfferCreate, requesting_user: UserInDB = None
+    ) -> OfferPublic:
         created_offer = await self.db.fetch_one(
             query=CREATE_OFFER_FOR_CLEANING_QUERY,
             values={**new_offer.dict(), "status": "pending"},
         )
 
-        return OfferInDB(**created_offer)
+        return OfferPublic(**created_offer, user=requesting_user)
 
     async def list_offers_for_cleaning(
-        self, *, cleaning: CleaningInDB, populate: bool = True
+        self,
+        *,
+        cleaning: CleaningInDB,
+        populate: bool = True,
+        requesting_user = None,
     ) -> list[OfferInDB | OfferPublic]:
+        # ? use requesting_user as user.id
         offer_records = await self.db.fetch_all(
-            query=LIST_OFFERS_FOR_CLEANING_QUERY, values={"cleaning_id": cleaning.id}
+            query=LIST_OFFERS_FOR_CLEANING_QUERY,
+            values={"cleaning_id": cleaning.id},
         )
-        offers = [OfferInDB(**offer) for offer in offer_records]
+        offers = [OfferInDB(**o) for o in offer_records]
 
         if populate:
             return [await self.populate_offer(offer=offer) for offer in offers]
@@ -93,17 +103,17 @@ class OffersRepository(BaseRepository):
 
     async def get_offer_for_cleaning_from_user(
         self, *, cleaning: CleaningInDB, user: UserInDB
-    ) -> OfferInDB | None:
+    ) -> OfferPublic | None:
         offer_record = await self.db.fetch_one(
             query=GET_OFFER_FOR_CLEANING_FROM_USER_QUERY,
             values={"cleaning_id": cleaning.id, "user_id": user.id},
         )
 
-        return OfferInDB(**offer_record) if offer_record else None
+        return OfferPublic(**offer_record) if offer_record else None
 
     async def accept_offer(
         self, *, offer: OfferInDB, offer_update: OfferUpdate
-    ) -> OfferInDB:
+    ) -> OfferPublic:
         async with self.db.transaction():
             accepted_offer = await self.db.fetch_one(
                 query=ACCEPT_OFFER_QUERY,  # accept current offer
@@ -114,11 +124,11 @@ class OffersRepository(BaseRepository):
                 values={"cleaning_id": offer.cleaning_id, "user_id": offer.user_id},
             )
 
-            return OfferInDB(**accepted_offer)
+            return await self.populate_offer(offer=OfferInDB(**accepted_offer))
 
     async def cancel_offer(
         self, *, offer: OfferInDB, offer_update: OfferUpdate
-    ) -> OfferInDB:
+    ) -> OfferPublic:
         async with self.db.transaction():
             cancelled_offer = await self.db.fetch_one(
                 query=CANCEL_OFFER_QUERY,  # cancel current offer
@@ -129,7 +139,7 @@ class OffersRepository(BaseRepository):
                 values={"cleaning_id": offer.cleaning_id, "user_id": offer.user_id},
             )
 
-            return OfferInDB(**cancelled_offer)
+            return await self.populate_offer(offer=OfferInDB(**cancelled_offer))
 
     async def rescind_offer(self, *, offer: OfferInDB) -> int:
         return await self.db.execute(
@@ -139,8 +149,10 @@ class OffersRepository(BaseRepository):
 
     async def mark_offer_completed(
         self, *, cleaning: CleaningInDB, cleaner: UserInDB
-    ) -> OfferInDB:
-        return await self.db.fetch_one(
+    ) -> OfferPublic:
+        offer_record = await self.db.fetch_one(
             query=MARK_OFFER_COMPLETED_QUERY,  # owner of cleaning marks job status as completed
             values={"cleaning_id": cleaning.id, "user_id": cleaner.id},
         )
+
+        return OfferPublic(**offer_record, user=cleaner)

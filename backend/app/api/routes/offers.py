@@ -1,4 +1,3 @@
-
 from app.api.dependencies.auth import get_current_active_user
 from app.api.dependencies.cleanings import get_cleaning_by_id_from_path
 from app.api.dependencies.database import get_repository
@@ -41,7 +40,8 @@ async def create_offer(
     offers_repo: OffersRepository = Depends(get_repository(OffersRepository)),
 ) -> OfferPublic:
     return await offers_repo.create_offer_for_cleaning(
-        new_offer=OfferCreate(cleaning_id=cleaning.id, user_id=current_user.id)
+        new_offer=OfferCreate(cleaning_id=cleaning.id, user_id=current_user.id),
+        requesting_user=current_user,
     )
 
 
