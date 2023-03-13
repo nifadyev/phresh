@@ -1,10 +1,7 @@
 import React from "react"
 import { Routes, Route, useNavigate } from "react-router-dom"
-import { connect, useSelector, shallowEqual } from "react-redux"
-import { Actions as cleaningActions } from "../../redux/cleanings"
-import { Actions as offersActions } from "../../redux/offers"
+import { useSingleCleaningJob } from "hooks/cleanings/useSingleCleaningJob"
 import {
-  EuiAvatar,
   EuiButtonEmpty,
   EuiButtonIcon,
   EuiFlexGroup,
@@ -21,78 +18,44 @@ import {
   CleaningJobEditForm,
   CleaningJobOffersTable,
   NotFoundPage,
-  PermissionsNeeded
-} from "../../components"
+  PermissionsNeeded,
+  UserAvatar
+} from "components"
 import { useParams } from "react-router-dom"
 import styled from "styled-components"
 
 const StyledEuiPage = styled(EuiPage)`
   flex: 1;
+  display: flex;
+  flex-direction: column;
 `
 const StyledFlexGroup = styled(EuiFlexGroup)`
   padding: 1rem;
 `
 
-function CleaningJobView({
-  user,
-  isLoading,
-  offersError,
-  cleaningError,
-  offersIsLoading,
-  offersIsUpdating,
-  currentCleaningJob,
-  fetchCleaningJobById,
-  createOfferForCleaning,
-  clearCurrentCleaningJob,
-  fetchUserOfferForCleaningJob,
-  fetchAllOffersForCleaningJob,
-  acceptUsersOfferForCleaningJob
-}) {
-  const { cleaning_id } = useParams()
+export default function CleaningJobView() {
   const navigate = useNavigate()
-  const userOwnsCleaningResource = useSelector(
-    (state) => state.cleanings.data?.[cleaning_id]?.owner === user?.id,
-    shallowEqual
-  )
-  const allOffersForCleaningJob = useSelector(
-    (state) => state.offers.data?.[cleaning_id],
-    shallowEqual
-  )
-
-  React.useEffect(() => {
-    if (cleaning_id && user?.username) {
-      fetchCleaningJobById({ cleaning_id })
-
-      if (userOwnsCleaningResource) {
-        fetchAllOffersForCleaningJob({ cleaning_id })
-      } else {
-        fetchUserOfferForCleaningJob({ cleaning_id, username: user.username })
-      }
-    }
-
-    return () => clearCurrentCleaningJob()
-  }, [
-    cleaning_id,
-    fetchCleaningJobById,
-    clearCurrentCleaningJob,
-    userOwnsCleaningResource,
-    fetchUserOfferForCleaningJob,
-    fetchAllOffersForCleaningJob,
-    user
-  ])
+  const { cleaningId } = useParams()
+  const {
+    error,
+    cleaningJob,
+    isLoading,
+    isUpdating,
+    activeCleaningId,
+    userIsOwner
+  } = useSingleCleaningJob(cleaningId)
 
   if (isLoading) return <EuiLoadingSpinner size="xl" />
-  if (!currentCleaningJob) return <EuiLoadingSpinner size="xl" />
-  if (!currentCleaningJob?.name) return <NotFoundPage />
+  if (!cleaningJob && activeCleaningId !== cleaningId) return <NotFoundPage />
 
-  const editJobButton = userOwnsCleaningResource ? (
+  const editJobButton = userIsOwner ? (
     <EuiButtonIcon iconType="documentEdit" aria-label="edit" onClick={() => navigate(`edit`)} />
   ) : null
   const goBackButton = (
     <EuiButtonEmpty
       iconType="sortLeft"
       size="s"
-      onClick={() => navigate(`/cleaning-jobs/${currentCleaningJob.id}`)}
+      onClick={() => navigate(`/cleaning-jobs/${cleaningJob.id}`)}
     >
       back to job
     </EuiButtonEmpty>
@@ -100,27 +63,22 @@ function CleaningJobView({
 
   const viewCleaningJobElement = (
     <CleaningJobCard
-      user={user}
-      offersError={offersError}
-      offersIsLoading={offersIsLoading}
-      cleaningJob={currentCleaningJob}
-      isOwner={userOwnsCleaningResource}
-      createOfferForCleaning={createOfferForCleaning}
+      offersIsLoading={null}
+      cleaningJob={cleaningJob}
+      isOwner={userIsOwner}
+      createOfferForCleaning={null}
+      userOfferForCleaningJob={null}
     />
   )
   const editCleaningJobElement = (
     <PermissionsNeeded
-      element={<CleaningJobEditForm cleaningJob={currentCleaningJob} />}
-      isAllowed={userOwnsCleaningResource}
+      element={<CleaningJobEditForm cleaningId={cleaningId} />}
+      isAllowed={userIsOwner}
     />
   )
-  const cleaningJobOffersTableElement = userOwnsCleaningResource ? (
-    <CleaningJobOffersTable
-      offers={allOffersForCleaningJob ? Object.values(allOffersForCleaningJob) : []}
-      offersIsUpdating={offersIsUpdating}
-      offersIsLoading={offersIsLoading}
-      handleAcceptOffer={acceptUsersOfferForCleaningJob}
-    />
+
+  const cleaningJobOffersTableElement = userIsOwner ? (
+    <CleaningJobOffersTable offers={[]} handleAcceptOffer={null} offersIsLoading={null} />
   ) : null
 
   return (
@@ -136,20 +94,11 @@ function CleaningJobView({
                 responsive={false}
               >
                 <EuiFlexItem grow={false}>
-                  <EuiAvatar
-                    size="xl"
-                    name={
-                      currentCleaningJob.owner?.profile?.full_name ||
-                      currentCleaningJob.owner?.username ||
-                      "Anonymous"
-                    }
-                    initialsLength={2}
-                    imageUrl={currentCleaningJob.owner?.profile?.image}
-                  />
+                  <UserAvatar size="xl" user={cleaningJob.owner} initialsLength={2} />
                 </EuiFlexItem>
                 <EuiFlexItem>
                   <EuiTitle>
-                    <p>@{currentCleaningJob.owner?.username}</p>
+                    <p>@{cleaningJob.owner?.username}</p>
                   </EuiTitle>
                 </EuiFlexItem>
               </EuiFlexGroup>
@@ -178,23 +127,3 @@ function CleaningJobView({
     </StyledEuiPage>
   )
 }
-
-export default connect(
-  (state) => ({
-    user: state.auth.user,
-    isLoading: state.cleanings.isLoading,
-    offersIsLoading: state.offers.isLoading,
-    offersIsUpdating: state.offers.isUpdating,
-    offersError: state.offers.error,
-    cleaningError: state.cleanings.cleaningsError,
-    currentCleaningJob: state.cleanings.currentCleaningJob
-  }),
-  {
-    fetchCleaningJobById: cleaningActions.fetchCleaningJobById,
-    clearCurrentCleaningJob: cleaningActions.clearCurrentCleaningJob,
-    fetchUserOfferForCleaningJob: offersActions.fetchUserOfferForCleaningJob,
-    fetchAllOffersForCleaningJob: offersActions.fetchAllOffersForCleaningJob,
-    createOfferForCleaning: offersActions.createOfferForCleaning,
-    acceptUsersOfferForCleaningJob: offersActions.acceptUsersOfferForCleaningJob
-  }
-)(CleaningJobView)
