@@ -1,7 +1,8 @@
 import React from "react"
 import { connect } from "react-redux"
-import { Actions as cleaningActions } from "../../redux/cleanings"
 import { useNavigate } from "react-router-dom"
+import { Actions as cleaningActions } from "redux/cleanings"
+import { useCleaningJobForm } from "hooks/ui/useCleaningJobForm"
 import {
   EuiButton,
   EuiFieldText,
@@ -10,88 +11,23 @@ import {
   EuiFieldNumber,
   EuiSuperSelect,
   EuiSpacer,
-  EuiText,
   EuiTextArea
 } from "@elastic/eui"
-import validation from "../../utils/validation"
-import { extractErrorMessages } from "../../utils/errors"
 
-const cleaningTypeOptions = [
-  {
-    value: "dust_up",
-    inputDisplay: "Dust Up",
-    dropdownDisplay: (
-      <React.Fragment>
-        <strong>Dust Up</strong>
-        <EuiText size="s" color="subdued">
-          <p className="euiTextColor--subdued">
-            A minimal clean job. Dust shelves and mantels, tidy rooms, and sweep floors.
-          </p>
-        </EuiText>
-      </React.Fragment>
-    )
-  },
-  {
-    value: "spot_clean",
-    inputDisplay: "Spot Clean",
-    dropdownDisplay: (
-      <React.Fragment>
-        <strong>Spot Clean</strong>
-        <EuiText size="s" color="subdued">
-          <p className="euiTextColor--subdued">
-            A standard clean job. Vacuum all indoor spaces, sanitize surfaces, and disinfect
-            targeted areas. Bathrooms, tubs, and toilets can be added on for an additional charge.
-          </p>
-        </EuiText>
-      </React.Fragment>
-    )
-  },
-  {
-    value: "full_clean",
-    inputDisplay: "Deep Clean",
-    dropdownDisplay: (
-      <React.Fragment>
-        <strong>Deep Clean</strong>
-        <EuiText size="s" color="subdued">
-          <p className="euiTextColor--subdued">
-            A complete clean job. Mop tile floors, scrub out tough spots, and a guaranteed clean
-            residence upon completion. Dishes, pots, and pans included in this package.
-          </p>
-        </EuiText>
-      </React.Fragment>
-    )
-  }
-]
-
-function CleaningJobCreateForm({ user, cleaningError, isLoading, createCleaning }) {
-  const [form, setForm] = React.useState({
-    name: "",
-    description: "",
-    price: "",
-    cleaning_type: cleaningTypeOptions[0].value
-  })
-  const [errors, setErrors] = React.useState({})
-  const [hasSubmitted, setHasSubmitted] = React.useState(false)
+function CleaningJobCreateForm({ createCleaning }) {
   const navigate = useNavigate()
-  const cleaningErrorList = extractErrorMessages(cleaningError)
-
-  const validateInput = (label, value) => {
-    // grab validation function and run it on input if it exists
-    // if it doesn't exists, just assume the input is valid
-    const isValid = validation?.[label] ? validation?.[label]?.(value) : true
-    // set an error if the validation function did NOT return true
-    setErrors((errors) => ({ ...errors, [label]: !isValid }))
-  }
-
-  const onInputChange = (label, value) => {
-    validateInput(label, value)
-
-    setForm((state) => ({ ...state, [label]: value }))
-  }
-
-  const onCleaningTypeChange = (cleaning_type) => {
-    setForm((state) => ({ ...state, cleaning_type }))
-  }
+  const {
+    form,
+    errors,
+    setErrors,
+    isLoading,
+    validateInput,
+    setHasSubmitted,
+    getFormErrors,
+    cleaningTypeOptions,
+    onCleaningTypeChange,
+    onInputChange
+  } = useCleaningJobForm()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -107,26 +43,12 @@ function CleaningJobCreateForm({ user, cleaningError, isLoading, createCleaning 
 
     setHasSubmitted(true)
 
-    const res = await createCleaning({ new_cleaning: { ...form } })
+    const res = await createCleaning({ newCleaning: { ...form } })
     if (res.success) {
       const cleaningId = res.data?.id
       navigate(`/cleaning-jobs/${cleaningId}`)
       // redirect user to new cleaning job post
     }
-  }
-
-  const getFormErrors = () => {
-    const formErrors = []
-
-    if (errors.form) {
-      formErrors.push(errors.form)
-    }
-
-    if (hasSubmitted && cleaningErrorList.length) {
-      return formErrors.concat(cleaningErrorList)
-    }
-
-    return formErrors
   }
 
   return (
@@ -200,13 +122,6 @@ function CleaningJobCreateForm({ user, cleaningError, isLoading, createCleaning 
   )
 }
 
-export default connect(
-  (state) => ({
-    user: state.auth.user,
-    isLoading: state.cleanings.isLoading,
-    cleaningError: state.cleanings.error
-  }),
-  {
-    createCleaning: cleaningActions.createCleaningJob
-  }
-)(CleaningJobCreateForm)
+export default connect(null, {
+  createCleaning: cleaningActions.createCleaningJob
+})(CleaningJobCreateForm)
