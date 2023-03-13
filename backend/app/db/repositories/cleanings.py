@@ -1,4 +1,5 @@
 from app.db.repositories.base import BaseRepository
+from app.db.repositories.offers import OffersRepository
 from app.db.repositories.users import UsersRepository
 from app.models.cleaning import (
     CleaningCreate,
@@ -47,16 +48,17 @@ class CleaningsRepository(BaseRepository):
     def __init__(self, db: Database) -> None:
         super().__init__(db)
         self.users_repo = UsersRepository(db)
+        self.offers_repo = OffersRepository(db)
 
     async def create_cleaning(
         self, *, new_cleaning: CleaningCreate, requesting_user: UserInDB
-    ) -> CleaningInDB:
-        cleaning = await self.db.fetch_one(
+    ) -> CleaningPublic:
+        cleaning_record = await self.db.fetch_one(
             query=CREATE_CLEANING_QUERY,
             values={**new_cleaning.dict(), "owner": requesting_user.id},
         )
 
-        return CleaningInDB(**cleaning)
+        return CleaningPublic(**cleaning_record, total_offers=0)
 
     async def get_cleaning_by_id(
         self, *, id: int, requesting_user: UserInDB, populate: bool = True
@@ -76,19 +78,31 @@ class CleaningsRepository(BaseRepository):
         return None
 
     async def list_all_user_cleanings(
-        self, requesting_user: UserInDB
-    ) -> list[CleaningInDB]:
+        self, *, requesting_user: UserInDB, populate: bool = True
+    ) -> list[CleaningInDB | CleaningPublic]:
         cleaning_records = await self.db.fetch_all(
-            query=LIST_ALL_USER_CLEANINGS_QUERY, values={"owner": requesting_user.id}
+            query=LIST_ALL_USER_CLEANINGS_QUERY,
+            values={"owner": requesting_user.id},
         )
+        cleanings = [CleaningInDB(**cleaning) for cleaning in cleaning_records]
 
-        return [CleaningInDB(**l) for l in cleaning_records]
+        if populate:
+            return [
+                await self.populate_cleaning(
+                    cleaning=cleaning,
+                    requesting_user=requesting_user,
+                    populate_offers=True,
+                )
+                for cleaning in cleanings
+            ]
+
+        return cleanings
 
     async def update_cleaning(
         self, *, cleaning: CleaningInDB, cleaning_update: CleaningUpdate
-    ) -> CleaningInDB:
+    ) -> CleaningPublic:
         cleaning_update_params = cleaning.copy(
-            update=cleaning_update.dict(exclude_unset=True)
+            update=cleaning_update.dict(exclude_unset=True),
         )
 
         if cleaning_update_params.cleaning_type is None:
@@ -100,11 +114,20 @@ class CleaningsRepository(BaseRepository):
         updated_cleaning = await self.db.fetch_one(
             query=UPDATE_CLEANING_BY_ID_QUERY,
             values=cleaning_update_params.dict(
-                exclude={"owner", "created_at", "updated_at"}
+                exclude={
+                    "owner",
+                    "offers",
+                    "total_offers",
+                    "created_at",
+                    "updated_at",
+                },
             ),
         )
 
-        return CleaningInDB(**updated_cleaning)
+        return await self.populate_cleaning(
+            cleaning=CleaningInDB(**updated_cleaning),
+            populate_offers=True,
+        )
 
     async def delete_cleaning_by_id(self, *, cleaning: CleaningInDB) -> int:
         return await self.db.execute(
@@ -112,10 +135,40 @@ class CleaningsRepository(BaseRepository):
         )
 
     async def populate_cleaning(
-        self, *, cleaning: CleaningInDB, requesting_user: UserInDB = None
+        self,
+        *,
+        cleaning: CleaningInDB,
+        requesting_user: UserInDB = None,
+        populate_offers: bool = False,
     ) -> CleaningPublic:
+        """Cleaning models are populated with the owner
+        and total number of offers made for it.
+        If the user is the owner of the cleaning, offers are included by default.
+        Otherwise, only include an offer made by the requesting user - if it exists.
+        """
+        offers = await self.offers_repo.list_offers_for_cleaning(
+            cleaning=cleaning,
+            populate=populate_offers,
+            requesting_user=requesting_user,
+        )
+
         return CleaningPublic(
             **cleaning.dict(exclude={"owner"}),
             owner=await self.users_repo.get_user_by_id(user_id=cleaning.owner),
+            total_offers=len(offers),
+            # full offers if `populate_offers` is specified,
+            # otherwise only the offer from the authed user
+            offers=offers
+            if populate_offers
+            else [
+                offer
+                for offer in [
+                    await self.offers_repo.get_offer_for_cleaning_from_user(
+                        cleaning=cleaning,
+                        user=requesting_user,
+                    )
+                ]
+                if offer
+            ],
             # any other populated fields for cleaning public would be tacked on here
         )
