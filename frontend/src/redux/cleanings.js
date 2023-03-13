@@ -1,6 +1,7 @@
-import initialState from "./initialState"
-import { REQUEST_LOG_USER_OUT } from "./auth"
-import apiClient from "../services/apiClient"
+import initialState from "redux/initialState"
+import { REQUEST_LOG_USER_OUT } from "redux/auth"
+import { Actions as uiActions } from "redux/ui"
+import apiClient from "services/apiClient"
 
 export const CREATE_CLEANING_JOB = "@@cleanings/CREATE_CLEANING_JOB"
 export const CREATE_CLEANING_JOB_SUCCESS = "@@cleanings/CREATE_CLEANING_JOB_SUCCESS"
@@ -33,19 +34,22 @@ export default function cleaningsReducer(state = initialState.cleanings, action 
         ...state,
         isLoading: false,
         error: null,
-        currentCleaningJob: action.data
+        data: {
+          ...state.data,
+          [action.data.id]: action.data
+        },
+        activeCleaningId: action.data.id
       }
     case FETCH_CLEANING_JOB_BY_ID_FAILURE:
       return {
         ...state,
         isLoading: false,
-        error: action.error,
-        currentCleaningJob: {}
+        error: action.error
       }
     case CLEAR_CURRENT_CLEANING_JOB:
       return {
         ...state,
-        currentCleaningJob: null
+        activeCleaningId: null
       }
     case CREATE_CLEANING_JOB:
       return {
@@ -78,12 +82,9 @@ export default function cleaningsReducer(state = initialState.cleanings, action 
         ...state,
         isUpdating: false,
         error: null,
-        currentCleaningJob: {
-          ...state.currentCleaningJob,
-          ...Object.keys(action.data).reduce((acc, key) => {
-            if (key !== "owner") acc[key] = action.data[key]
-            return acc
-          }, {})
+        data: {
+          ...state.data,
+          [action.data.id]: action.data
         }
       }
     case UPDATE_CLEANING_JOB_FAILURE:
@@ -127,7 +128,7 @@ export const Actions = {}
 
 Actions.clearCurrentCleaningJob = () => ({ type: CLEAR_CURRENT_CLEANING_JOB })
 
-Actions.createCleaningJob = ({ new_cleaning }) => {
+Actions.createCleaningJob = ({ newCleaning }) => {
   return apiClient({
     url: `/cleanings/`,
     method: `POST`,
@@ -137,15 +138,15 @@ Actions.createCleaningJob = ({ new_cleaning }) => {
       FAILURE: CREATE_CLEANING_JOB_FAILURE
     },
     options: {
-      data: { new_cleaning },
+      data: { new_cleaning: newCleaning },
       params: {}
     }
   })
 }
 
-Actions.fetchCleaningJobById = ({ cleaning_id }) => {
+Actions.fetchCleaningJobById = ({ cleaningId }) => {
   return apiClient({
-    url: `/cleanings/${cleaning_id}/`,
+    url: `/cleanings/${cleaningId}/`,
     method: `GET`,
     types: {
       REQUEST: FETCH_CLEANING_JOB_BY_ID,
@@ -159,20 +160,41 @@ Actions.fetchCleaningJobById = ({ cleaning_id }) => {
   })
 }
 
-Actions.updateCleaningJob = ({ cleaning_id, cleaning_update }) => {
-  return apiClient({
-    url: `/cleanings/${cleaning_id}/`,
-    method: `PUT`,
-    types: {
-      REQUEST: UPDATE_CLEANING_JOB,
-      SUCCESS: UPDATE_CLEANING_JOB_SUCCESS,
-      FAILURE: UPDATE_CLEANING_JOB_FAILURE
-    },
-    options: {
-      data: { cleaning_update },
-      params: {}
-    }
-  })
+Actions.updateCleaningJob = ({ cleaningId, cleaningUpdate }) => {
+  return (dispatch) => {
+    return apiClient({
+      url: `/cleanings/${cleaningId}/`,
+      method: `PUT`,
+      types: {
+        REQUEST: UPDATE_CLEANING_JOB,
+        SUCCESS: UPDATE_CLEANING_JOB_SUCCESS,
+        FAILURE: UPDATE_CLEANING_JOB_FAILURE
+      },
+      options: {
+        data: { cleaning_update: cleaningUpdate },
+        params: {}
+      },
+      onSuccess: (res) => {
+        dispatch(
+          uiActions.addToast({
+            id: `update-cleaning-success`,
+            title: "Success!",
+            color: "success",
+            iconType: "checkInCircleFilled",
+            toastLifeTimeMs: 15000,
+            text: "Your cleaning job has been updated."
+          })
+        )
+
+        return {
+          type: UPDATE_CLEANING_JOB_SUCCESS,
+          success: true,
+          status: res.status,
+          data: res.data
+        }
+      }
+    })
+  }
 }
 
 Actions.fetchAllUserOwnedCleaningJobs = () => {
