@@ -37,3 +37,10 @@ class CleaningInDB(IDModelMixin, DateTimeModelMixin, CleaningBase):
 
 class CleaningPublic(CleaningInDB):
     owner: int | UserPublic
+    total_offers: int | None
+    offers: list["OfferPublic"] = []
+
+
+from app.models.offer import OfferPublic  # noqa: E402, TCH002
+
+CleaningPublic.update_forward_refs()
